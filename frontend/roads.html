@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRAFFICIQ — Road Network Database Explorer</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header class="navbar">
+        <div class="container nav-container">
+            <a href="index.html" class="logo-brand">
+                <div class="logo-icon"><i class="fas fa-route"></i></div>
+                <span class="logo-text">TRAFFICIQ</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html" class="nav-link"><i class="fas fa-home"></i> Home</a></li>
+                <li><a href="dashboard.html" class="nav-link"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="routes.html" class="nav-link"><i class="fas fa-directions"></i> Route Planner</a></li>
+                <li><a href="roads.html" class="nav-link active"><i class="fas fa-road"></i> Road Database</a></li>
+                <li><a href="incidents.html" class="nav-link"><i class="fas fa-exclamation-triangle"></i> Incidents</a></li>
+                <li><a href="analytics.html" class="nav-link"><i class="fas fa-chart-pie"></i> Analytics</a></li>
+            </ul>
+            <div class="nav-actions">
+                <button class="theme-toggle-btn" title="Toggle Theme"><i class="fas fa-sun"></i></button>
+                <div id="navbar-auth-section">
+                    <a href="login.html" class="btn-primary"><i class="fas fa-user-circle"></i> Sign In</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="container" style="padding-top: 30px; padding-bottom: 50px;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
+            <div>
+                <h1 style="font-size: 1.8rem; font-weight: 800; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-database" style="color: var(--accent-cyan);"></i> Intelligent Road Network Database
+                </h1>
+                <p style="color: var(--text-secondary); font-size: 0.95rem;">
+                    Relational schema representation of Hyderabad corridors with referential integrity, indexes, and full CRUD.
+                </p>
+            </div>
+            <div>
+                <!-- Add Road Button (Admin Only) -->
+                <button id="btn-add-road" onclick="openRoadModal()" class="btn-primary" style="display: none;">
+                    <i class="fas fa-plus-circle"></i> Add New Road Segment
+                </button>
+            </div>
+        </div>
+
+        <!-- Table Card with Search & Filters -->
+        <div class="table-card">
+            <div class="table-header">
+                <div class="table-toolbar">
+                    <input type="text" id="road-search" class="search-input" placeholder="Search by road name, code, or area..." onkeyup="filterRoads()">
+                    <select id="road-type-filter" class="select-filter" onchange="filterRoads()">
+                        <option value="ALL">All Types</option>
+                        <option value="EXPRESSWAY">Expressway</option>
+                        <option value="ARTERIAL">Arterial</option>
+                        <option value="SUB_ARTERIAL">Sub-Arterial</option>
+                    </select>
+                    <select id="road-congestion-filter" class="select-filter" onchange="filterRoads()">
+                        <option value="ALL">All Congestion</option>
+                        <option value="LOW">Low</option>
+                        <option value="MODERATE">Moderate</option>
+                        <option value="HEAVY">Heavy</option>
+                        <option value="SEVERE">Severe</option>
+                    </select>
+                </div>
+                <div style="font-size: 0.88rem; color: var(--text-muted);" id="road-count-display">
+                    Showing records
+                </div>
+            </div>
+
+            <div class="data-table-wrapper">
+                <table class="data-table" id="roads-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Code</th>
+                            <th>Road Name</th>
+                            <th>Start Junction</th>
+                            <th>End Junction</th>
+                            <th>Type</th>
+                            <th>Dist. (km)</th>
+                            <th>Speed Limit</th>
+                            <th>Current Flow</th>
+                            <th>Congestion</th>
+                            <th style="text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="roads-tbody">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Add/Edit Road Modal -->
+    <div id="road-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="road-modal-title">Add Road Network Segment</div>
+                <button class="modal-close-btn" onclick="closeRoadModal()">&times;</button>
+            </div>
+            <form id="road-form" onsubmit="handleRoadFormSubmit(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="modal-road-id">
+
+                    <div class="form-group">
+                        <label class="form-label">Road Name</label>
+                        <input type="text" id="modal-road-name" class="form-control" required placeholder="e.g. Madhapur - Jubilee Hills Link">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Road Code (Unique)</label>
+                            <input type="text" id="modal-road-code" class="form-control" required placeholder="HYD-RD-21">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Road Type</label>
+                            <select id="modal-road-type" class="form-control">
+                                <option value="ARTERIAL">Arterial Corridor</option>
+                                <option value="EXPRESSWAY">Expressway</option>
+                                <option value="SUB_ARTERIAL">Sub-Arterial Link</option>
+                                <option value="COLLECTOR">Collector Road</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Start Location (FK)</label>
+                            <select id="modal-start-loc" class="form-control" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">End Location (FK)</label>
+                            <select id="modal-end-loc" class="form-control" required></select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Distance (km)</label>
+                            <input type="number" step="0.01" min="0.1" id="modal-distance" class="form-control" required placeholder="4.50">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Speed Limit (km/h)</label>
+                            <input type="number" min="20" max="140" id="modal-speed-limit" class="form-control" required value="50">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Lanes</label>
+                            <input type="number" min="2" max="12" id="modal-lanes" class="form-control" value="4">
+                        </div>
+                        <div class="form-group" style="display: flex; flex-direction: column; justify-content: center;">
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer;">
+                                <input type="checkbox" id="modal-is-toll"> Expressway Toll Road
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer; margin-top: 6px;">
+                                <input type="checkbox" id="modal-is-bidirectional" checked> Bidirectional Flow
+                            </label>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
+                        <button type="button" onclick="closeRoadModal()" class="btn-secondary">Cancel</button>
+                        <button type="submit" class="btn-primary" id="btn-save-road">Save Segment</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container footer-bottom">
+            <div>&copy; 2026 TRAFFICIQ — Road Network Database (3NF/BCNF Relational Model)</div>
+            <div>Demonstrating <strong>DBMS Units I–V</strong> Schema & Transaction Integrity</div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/store.js"></script>
+    <script>
+        let roadsData = [];
+        let locationsData = [];
+
+        async function initRoadsPage() {
+            // Check Admin role
+            if (Auth.isAdmin()) {
+                document.getElementById("btn-add-road").style.display = "inline-flex";
+            }
+
+            await loadLocations();
+            await loadRoads();
+        }
+
+        async function loadLocations() {
+            locationsData = await TrafficiQStore.getLocations();
+
+            const startSel = document.getElementById("modal-start-loc");
+            const endSel = document.getElementById("modal-end-loc");
+            startSel.innerHTML = "";
+            endSel.innerHTML = "";
+
+            locationsData.forEach(loc => {
+                const id = loc.location_id || loc.locationId;
+                const name = loc.location_name || loc.locationName;
+                startSel.innerHTML += `<option value="${id}">${name}</option>`;
+                endSel.innerHTML += `<option value="${id}">${name}</option>`;
+            });
+        }
+
+        async function loadRoads() {
+            roadsData = await TrafficiQStore.getRoads();
+            renderRoadsTable(roadsData);
+        }
+
+        function renderRoadsTable(list) {
+            document.getElementById("road-count-display").innerText = `Showing ${list.length} records`;
+            const tbody = document.getElementById("roads-tbody");
+            const isAdmin = Auth.isAdmin();
+
+            tbody.innerHTML = list.map(r => {
+                const id = r.road_id || r.roadId;
+                const code = r.road_code || r.roadCode;
+                const name = r.road_name || r.roadName;
+                const type = r.road_type || r.roadType;
+                const start = r.start_location_name || r.startLocationName || 'Hyderabad Node';
+                const end = r.end_location_name || r.endLocationName || 'Hyderabad Node';
+                const dist = r.distance_km || r.distanceKm;
+                const limit = r.speed_limit_kmh || r.speedLimitKmh;
+                const curSpeed = r.current_speed_kmh || r.currentSpeedKmh || limit;
+                const cong = r.congestion_level || r.congestionLevel || 'LOW';
+
+                const adminActions = isAdmin ? `
+                    <button onclick="editRoad(${id})" class="btn-secondary" style="padding: 4px 8px; font-size: 0.78rem;" title="Edit Road">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="deleteRoad(${id})" class="btn-secondary" style="padding: 4px 8px; font-size: 0.78rem; color: var(--accent-red);" title="Delete Road">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                ` : `
+                    <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: 6px;">Admin Only</span>
+                `;
+
+                return `
+                    <tr>
+                        <td><code>#${id}</code></td>
+                        <td><strong>${code}</strong></td>
+                        <td>${name}</td>
+                        <td style="font-size: 0.85rem; color: var(--text-secondary);">${start}</td>
+                        <td style="font-size: 0.85rem; color: var(--text-secondary);">${end}</td>
+                        <td><span style="font-size: 0.8rem; color: var(--text-muted);">${type}</span></td>
+                        <td>${dist} km</td>
+                        <td>${limit} km/h</td>
+                        <td><strong>${curSpeed} km/h</strong></td>
+                        <td><span class="badge-status badge-${cong.toLowerCase()}">${cong}</span></td>
+                        <td style="text-align: right; white-space: nowrap;">
+                            <button onclick="MapEngine.openStreetView('${name.replace(/'/g, "\\'")}', 17.43, 78.44)" class="btn-secondary" style="padding: 4px 8px; font-size: 0.78rem;" title="Street View">
+                                <i class="fas fa-street-view"></i>
+                            </button>
+                            ${adminActions}
+                        </td>
+                    </tr>
+                `;
+            }).join("");
+        }
+
+        function filterRoads() {
+            const q = document.getElementById("road-search").value.toLowerCase();
+            const typeFilter = document.getElementById("road-type-filter").value;
+            const congFilter = document.getElementById("road-congestion-filter").value;
+
+            const filtered = roadsData.filter(r => {
+                const name = (r.road_name || r.roadName || '').toLowerCase();
+                const code = (r.road_code || r.roadCode || '').toLowerCase();
+                const type = r.road_type || r.roadType;
+                const cong = r.congestion_level || r.congestionLevel;
+
+                const matchQ = name.includes(q) || code.includes(q);
+                const matchType = (typeFilter === "ALL" || type === typeFilter);
+                const matchCong = (congFilter === "ALL" || cong === congFilter);
+                return matchQ && matchType && matchCong;
+            });
+
+            renderRoadsTable(filtered);
+        }
+
+        function openRoadModal(road = null) {
+            const modal = document.getElementById("road-modal");
+            const title = document.getElementById("road-modal-title");
+
+            if (road) {
+                title.innerText = "Edit Road Segment";
+                document.getElementById("modal-road-id").value = road.road_id || road.roadId;
+                document.getElementById("modal-road-name").value = road.road_name || road.roadName;
+                document.getElementById("modal-road-code").value = road.road_code || road.roadCode;
+                document.getElementById("modal-road-code").disabled = true;
+                document.getElementById("modal-road-type").value = road.road_type || road.roadType;
+                document.getElementById("modal-distance").value = road.distance_km || road.distanceKm;
+                document.getElementById("modal-speed-limit").value = road.speed_limit_kmh || road.speedLimitKmh;
+            } else {
+                title.innerText = "Add Road Network Segment";
+                document.getElementById("road-form").reset();
+                document.getElementById("modal-road-id").value = "";
+                document.getElementById("modal-road-code").disabled = false;
+            }
+            modal.classList.add("active");
+        }
+
+        function closeRoadModal() {
+            document.getElementById("road-modal").classList.remove("active");
+        }
+
+        async function handleRoadFormSubmit(e) {
+            e.preventDefault();
+            const roadId = document.getElementById("modal-road-id").value;
+            const payload = {
+                roadName: document.getElementById("modal-road-name").value,
+                roadCode: document.getElementById("modal-road-code").value,
+                roadType: document.getElementById("modal-road-type").value,
+                startLocationId: parseInt(document.getElementById("modal-start-loc").value),
+                endLocationId: parseInt(document.getElementById("modal-end-loc").value),
+                distanceKm: parseFloat(document.getElementById("modal-distance").value),
+                speedLimitKmh: parseInt(document.getElementById("modal-speed-limit").value),
+                lanes: parseInt(document.getElementById("modal-lanes").value),
+                isToll: document.getElementById("modal-is-toll").checked,
+                isBidirectional: document.getElementById("modal-is-bidirectional").checked
+            };
+
+            if (payload.startLocationId === payload.endLocationId) {
+                alert("Start and End locations must be distinct.");
+                return;
+            }
+
+            if (roadId) {
+                await TrafficiQStore.updateRoad(roadId, payload);
+                alert("Road segment updated successfully.");
+            } else {
+                await TrafficiQStore.addRoad(payload);
+                alert("New road segment created successfully.");
+            }
+
+            closeRoadModal();
+            await loadRoads();
+        }
+
+        function editRoad(id) {
+            const road = roadsData.find(r => (r.road_id || r.roadId) === id);
+            if (road) openRoadModal(road);
+        }
+
+        async function deleteRoad(id) {
+            if (!confirm(`Are you sure you want to delete road segment #${id}?`)) return;
+
+            await TrafficiQStore.deleteRoad(id);
+            alert("Road segment removed.");
+            await loadRoads();
+        }
+
+        document.addEventListener("DOMContentLoaded", initRoadsPage);
+    </script>
+</body>
+</html>
