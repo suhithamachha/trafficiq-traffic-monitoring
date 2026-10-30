@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRAFFICIQ — Live Traffic Monitoring Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Navigation -->
+    <header class="navbar">
+        <div class="container nav-container">
+            <a href="index.html" class="logo-brand">
+                <div class="logo-icon"><i class="fas fa-route"></i></div>
+                <span class="logo-text">TRAFFICIQ</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html" class="nav-link"><i class="fas fa-home"></i> Home</a></li>
+                <li><a href="dashboard.html" class="nav-link active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="routes.html" class="nav-link"><i class="fas fa-directions"></i> Route Planner</a></li>
+                <li><a href="roads.html" class="nav-link"><i class="fas fa-road"></i> Road Database</a></li>
+                <li><a href="incidents.html" class="nav-link"><i class="fas fa-exclamation-triangle"></i> Incidents</a></li>
+                <li><a href="analytics.html" class="nav-link"><i class="fas fa-chart-pie"></i> Analytics</a></li>
+            </ul>
+            <div class="nav-actions">
+                <button class="theme-toggle-btn" title="Toggle Theme"><i class="fas fa-sun"></i></button>
+                <div id="navbar-auth-section">
+                    <a href="login.html" class="btn-primary"><i class="fas fa-user-circle"></i> Sign In</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container" style="padding-top: 30px; padding-bottom: 50px;">
+        
+        <!-- Header row -->
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
+            <div>
+                <h1 style="font-size: 1.8rem; font-weight: 800; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-satellite" style="color: var(--accent-cyan);"></i> Hyderabad Traffic Monitoring Dashboard
+                </h1>
+                <p style="color: var(--text-secondary); font-size: 0.95rem;">
+                    Real-time road network telemetry, bottleneck detection, and satellite spatial intelligence.
+                </p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <span class="badge-demo"><span class="badge-live-pulse"></span> Demo Traffic Data</span>
+                <span style="font-size: 0.85rem; color: var(--text-muted);" id="last-updated-text">Last Updated: Just now</span>
+                <button onclick="refreshDashboard()" class="btn-secondary" style="padding: 6px 14px; font-size: 0.85rem;">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+        </div>
+
+        <!-- Metric Summary Cards -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-icon-box metric-icon-blue"><i class="fas fa-road"></i></div>
+                <div>
+                    <div class="metric-label">Monitored Roads</div>
+                    <div class="metric-value" id="dash-total-roads">20</div>
+                    <div class="metric-hint">Active segments</div>
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon-box metric-icon-red"><i class="fas fa-exclamation-circle"></i></div>
+                <div>
+                    <div class="metric-label">Severe Bottlenecks</div>
+                    <div class="metric-value" id="dash-severe-count">4</div>
+                    <div class="metric-hint">Panjagutta, Ameerpet, Old City</div>
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon-box metric-icon-green"><i class="fas fa-tachometer-alt"></i></div>
+                <div>
+                    <div class="metric-label">Average Speed</div>
+                    <div class="metric-value" id="dash-avg-speed">38.4 <span style="font-size: 1rem; font-weight: 500;">km/h</span></div>
+                    <div class="metric-hint">Network-wide average</div>
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon-box metric-icon-amber"><i class="fas fa-car-crash"></i></div>
+                <div>
+                    <div class="metric-label">Active Incidents</div>
+                    <div class="metric-value" id="dash-active-incidents">5</div>
+                    <div class="metric-hint">Accidents & diversions</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Layout: Map (Left 65%) + Live Feed (Right 35%) -->
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 30px;">
+            
+            <!-- Map Card -->
+            <div class="map-wrapper" style="margin-bottom: 0;">
+                <div class="map-header">
+                    <div class="map-title">
+                        <i class="fas fa-map-marked-alt" style="color: var(--accent-cyan);"></i> Spatial Traffic Map
+                    </div>
+                    <div class="map-controls">
+                        <!-- Filters -->
+                        <select id="filter-congestion" class="select-filter" onchange="applyFilters()">
+                            <option value="ALL">All Congestion Levels</option>
+                            <option value="LOW">Low (Free Flow)</option>
+                            <option value="MODERATE">Moderate</option>
+                            <option value="HEAVY">Heavy</option>
+                            <option value="SEVERE">Severe / Gridlock</option>
+                        </select>
+                        <select id="filter-type" class="select-filter" onchange="applyFilters()">
+                            <option value="ALL">All Road Types</option>
+                            <option value="EXPRESSWAY">Expressway (ORR/PVNR)</option>
+                            <option value="ARTERIAL">Arterial Corridor</option>
+                            <option value="SUB_ARTERIAL">Sub-Arterial Link</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="dashboard-map" class="map-container" style="height: 540px;"></div>
+                <div class="map-legend">
+                    <span style="font-weight: 600; color: var(--text-primary);">Traffic Color Index:</span>
+                    <div class="legend-item"><span class="legend-dot legend-green"></span> Low (< 20% delay)</div>
+                    <div class="legend-item"><span class="legend-dot legend-amber"></span> Moderate (20-40% delay)</div>
+                    <div class="legend-item"><span class="legend-dot legend-orange"></span> Heavy (40-70% delay)</div>
+                    <div class="legend-item"><span class="legend-dot legend-red"></span> Severe (> 70% delay)</div>
+                </div>
+            </div>
+
+            <!-- Live Incident Alert Feed -->
+            <div class="table-card" style="margin-bottom: 0; display: flex; flex-direction: column;">
+                <div class="table-header" style="padding: 16px 20px;">
+                    <div style="font-weight: 700; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-bell" style="color: var(--accent-orange);"></i> Live Traffic Incidents
+                    </div>
+                    <span class="badge-status badge-severe" id="feed-incident-badge">5 Active</span>
+                </div>
+                <div id="incident-feed-list" style="padding: 16px; overflow-y: auto; max-height: 520px; display: flex; flex-direction: column; gap: 14px;">
+                    <!-- Rendered dynamically -->
+                    <div style="text-align: center; color: var(--text-muted); padding: 40px 0;">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 1.5rem; margin-bottom: 8px;"></i>
+                        <div>Loading incident feed...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filterable Road Conditions Grid -->
+        <div class="table-card">
+            <div class="table-header">
+                <div>
+                    <h3 style="font-size: 1.15rem; font-weight: 700;">Monitored Road Corridors Telemetry</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary);">Real-time snapshot metrics from MySQL views & sensors</p>
+                </div>
+                <div class="table-toolbar">
+                    <input type="text" id="road-search-input" class="search-input" placeholder="Search road name or area..." onkeyup="filterRoadTable()">
+                </div>
+            </div>
+            <div class="data-table-wrapper">
+                <table class="data-table" id="dashboard-roads-table">
+                    <thead>
+                        <tr>
+                            <th>Road Name</th>
+                            <th>Code</th>
+                            <th>Type</th>
+                            <th>Distance</th>
+                            <th>Speed Limit</th>
+                            <th>Current Speed</th>
+                            <th>Est. Travel Time</th>
+                            <th>Congestion</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dashboard-roads-tbody">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container footer-bottom">
+            <div>&copy; 2026 TRAFFICIQ — Hyderabad Metropolitan Traffic Monitoring</div>
+            <div>All telemetries labeled <strong>Demo Traffic Data</strong> for academic demonstration</div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="config.js"></script>
+    <script src="theme.js"></script>
+    <script src="auth.js"></script>
+    <script src="map.js"></script>
+    <script src="store.js"></script>
+    <script>
+        let dashMap;
+        let roadLayerGroup;
+        let incidentLayerGroup;
+        let allRoads = [];
+        let allIncidents = [];
+
+        async function initDashboard() {
+            dashMap = MapEngine.createMap("dashboard-map", {
+                center: [17.4200, 78.4300],
+                zoom: 12
+            });
+
+            await fetchTelemetryData();
+            renderDashboard();
+        }
+
+        async function fetchTelemetryData() {
+            allRoads = await TrafficiQStore.getRoads();
+            const rawIncidents = await TrafficiQStore.getIncidents();
+            allIncidents = rawIncidents.filter(i => i.status !== "RESOLVED");
+        }
+
+        function renderDashboard() {
+            // Metrics
+            document.getElementById("dash-total-roads").innerText = allRoads.length;
+            const severeCount = allRoads.filter(r => (r.congestion_level || r.congestionLevel) === "SEVERE").length;
+            document.getElementById("dash-severe-count").innerText = severeCount;
+            document.getElementById("dash-active-incidents").innerText = allIncidents.length;
+            document.getElementById("feed-incident-badge").innerText = `${allIncidents.length} Active`;
+
+            let speedSum = 0;
+            allRoads.forEach(r => speedSum += parseFloat(r.current_speed_kmh || r.currentSpeedKmh || r.speed_limit_kmh || 40));
+            const avg = (speedSum / Math.max(1, allRoads.length)).toFixed(1);
+            document.getElementById("dash-avg-speed").innerHTML = `${avg} <span style="font-size: 1rem; font-weight: 500;">km/h</span>`;
+
+            // Timestamp
+            document.getElementById("last-updated-text").innerText = `Last Updated: ${new Date().toLocaleTimeString()}`;
+
+            // Map Polylines & Markers
+            applyFilters();
+
+            // Incident Feed
+            renderIncidentFeed();
+
+            // Table
+            renderRoadsTable(allRoads);
+        }
+
+        function applyFilters() {
+            const congFilter = document.getElementById("filter-congestion").value;
+            const typeFilter = document.getElementById("filter-type").value;
+
+            if (roadLayerGroup) dashMap.removeLayer(roadLayerGroup);
+            if (incidentLayerGroup) dashMap.removeLayer(incidentLayerGroup);
+
+            const filteredRoads = allRoads.filter(r => {
+                const cong = r.congestion_level || r.congestionLevel;
+                const type = r.road_type || r.roadType;
+                const matchCong = (congFilter === "ALL" || cong === congFilter);
+                const matchType = (typeFilter === "ALL" || type === typeFilter);
+                return matchCong && matchType;
+            });
+
+            roadLayerGroup = MapEngine.renderRoadSegments(dashMap, filteredRoads);
+            incidentLayerGroup = MapEngine.renderIncidents(dashMap, allIncidents);
+            renderRoadsTable(filteredRoads);
+        }
+
+        function renderIncidentFeed() {
+            const container = document.getElementById("incident-feed-list");
+            if (allIncidents.length === 0) {
+                container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 40px 0;">No active incidents reported. Road flow clear.</div>`;
+                return;
+            }
+
+            container.innerHTML = allIncidents.map(inc => {
+                const isCritical = inc.severity === "CRITICAL" || inc.severity === "HIGH";
+                const badgeClass = isCritical ? "badge-severe" : "badge-moderate";
+                const roadName = inc.road_name || inc.roadName || 'Corridor Link';
+                return `
+                    <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <span class="badge-status ${badgeClass}">${inc.severity}</span>
+                            <span style="font-size: 0.78rem; color: var(--text-muted);">${inc.status}</span>
+                        </div>
+                        <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 4px;">${inc.incident_type || inc.incidentType}</div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">${inc.description}</div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted);">
+                            <span><i class="fas fa-road"></i> ${roadName}</span>
+                            <span style="color: var(--accent-orange); font-weight: 600;">+${inc.impact_delay_minutes || 15}m delay</span>
+                        </div>
+                    </div>
+                `;
+            }).join("");
+        }
+
+        function renderRoadsTable(roads) {
+            const tbody = document.getElementById("dashboard-roads-tbody");
+            tbody.innerHTML = roads.map(r => {
+                const cong = r.congestion_level || r.congestionLevel || 'LOW';
+                const congClass = `badge-${cong.toLowerCase()}`;
+                const name = r.road_name || r.roadName;
+                const code = r.road_code || r.roadCode;
+                const type = r.road_type || r.roadType;
+                const dist = r.distance_km || r.distanceKm;
+                const limit = r.speed_limit_kmh || r.speedLimitKmh;
+                const speed = r.current_speed_kmh || r.currentSpeedKmh || limit;
+                const time = r.estimated_travel_time_min || r.estimatedTravelTimeMin;
+
+                const startLat = r.start_lat || r.startLatitude || 17.43;
+                const endLat = r.end_lat || r.endLatitude || 17.44;
+                const startLng = r.start_lng || r.startLongitude || 78.44;
+                const endLng = r.end_lng || r.endLongitude || 78.45;
+                const midLat = (startLat + endLat) / 2;
+                const midLng = (startLng + endLng) / 2;
+
+                return `
+                    <tr>
+                        <td><strong>${name}</strong></td>
+                        <td><code>${code}</code></td>
+                        <td><span style="font-size: 0.8rem; color: var(--text-secondary);">${type}</span></td>
+                        <td>${dist} km</td>
+                        <td>${limit} km/h</td>
+                        <td><strong>${speed} km/h</strong></td>
+                        <td>${time} min</td>
+                        <td><span class="badge-status ${congClass}">${cong}</span></td>
+                        <td>
+                            <button onclick="MapEngine.openStreetView('${name.replace(/'/g, "\\'")}', ${midLat}, ${midLng})" class="btn-secondary" style="padding: 4px 8px; font-size: 0.78rem;">
+                                <i class="fas fa-street-view"></i> Street View
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join("");
+        }
+
+        function filterRoadTable() {
+            const q = document.getElementById("road-search-input").value.toLowerCase();
+            const filtered = allRoads.filter(r => {
+                const name = (r.road_name || r.roadName || '').toLowerCase();
+                const code = (r.road_code || r.roadCode || '').toLowerCase();
+                return name.includes(q) || code.includes(q);
+            });
+            renderRoadsTable(filtered);
+        }
+
+        async function refreshDashboard() {
+            await fetchTelemetryData();
+            renderDashboard();
+        }
+
+        document.addEventListener("DOMContentLoaded", initDashboard);
+    </script>
+</body>
+</html>
