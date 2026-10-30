@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRAFFICIQ — Traffic Incident Management</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header class="navbar">
+        <div class="container nav-container">
+            <a href="index.html" class="logo-brand">
+                <div class="logo-icon"><i class="fas fa-route"></i></div>
+                <span class="logo-text">TRAFFICIQ</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html" class="nav-link"><i class="fas fa-home"></i> Home</a></li>
+                <li><a href="dashboard.html" class="nav-link"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="routes.html" class="nav-link"><i class="fas fa-directions"></i> Route Planner</a></li>
+                <li><a href="roads.html" class="nav-link"><i class="fas fa-road"></i> Road Database</a></li>
+                <li><a href="incidents.html" class="nav-link active"><i class="fas fa-exclamation-triangle"></i> Incidents</a></li>
+                <li><a href="analytics.html" class="nav-link"><i class="fas fa-chart-pie"></i> Analytics</a></li>
+            </ul>
+            <div class="nav-actions">
+                <button class="theme-toggle-btn" title="Toggle Theme"><i class="fas fa-sun"></i></button>
+                <div id="navbar-auth-section">
+                    <a href="login.html" class="btn-primary"><i class="fas fa-user-circle"></i> Sign In</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="container" style="padding-top: 30px; padding-bottom: 50px;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
+            <div>
+                <h1 style="font-size: 1.8rem; font-weight: 800; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-traffic-light" style="color: var(--accent-orange);"></i> Traffic Incident Management
+                </h1>
+                <p style="color: var(--text-secondary); font-size: 0.95rem;">
+                    Monitor, report, and resolve real-time traffic hazards, accidents, road closures, and waterlogging alerts.
+                </p>
+            </div>
+            <div>
+                <button onclick="openIncidentModal()" class="btn-primary" id="btn-report-incident">
+                    <i class="fas fa-plus-circle"></i> Report Traffic Incident
+                </button>
+            </div>
+        </div>
+
+        <!-- Incidents Table Card -->
+        <div class="table-card">
+            <div class="table-header">
+                <div class="table-toolbar">
+                    <input type="text" id="incident-search" class="search-input" placeholder="Search by description or road..." onkeyup="filterIncidents()">
+                    <select id="incident-status-filter" class="select-filter" onchange="filterIncidents()">
+                        <option value="ALL">All Statuses</option>
+                        <option value="REPORTED">Reported (Pending)</option>
+                        <option value="IN_PROGRESS">In Progress</option>
+                        <option value="RESOLVED">Resolved</option>
+                    </select>
+                    <select id="incident-severity-filter" class="select-filter" onchange="filterIncidents()">
+                        <option value="ALL">All Severities</option>
+                        <option value="CRITICAL">Critical</option>
+                        <option value="HIGH">High</option>
+                        <option value="MEDIUM">Medium</option>
+                        <option value="LOW">Low</option>
+                    </select>
+                </div>
+                <div style="font-size: 0.88rem; color: var(--text-muted);" id="incident-count-display">
+                    Showing incidents
+                </div>
+            </div>
+
+            <div class="data-table-wrapper">
+                <table class="data-table" id="incidents-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Severity</th>
+                            <th>Incident Type</th>
+                            <th>Road Corridor</th>
+                            <th>Description</th>
+                            <th>Delay Impact</th>
+                            <th>Status</th>
+                            <th>Reported By</th>
+                            <th style="text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="incidents-tbody">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Report Incident Modal -->
+    <div id="incident-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="incident-modal-title">Report Traffic Incident</div>
+                <button class="modal-close-btn" onclick="closeIncidentModal()">&times;</button>
+            </div>
+            <form id="incident-form" onsubmit="handleIncidentSubmit(event)">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Road Corridor</label>
+                        <select id="modal-inc-road" class="form-control" required></select>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Incident Type</label>
+                            <select id="modal-inc-type" class="form-control" required>
+                                <option value="ACCIDENT">Traffic Accident / Collision</option>
+                                <option value="CONSTRUCTION">Road / Metro Construction</option>
+                                <option value="ROAD_CLOSURE">Road Closure / Blockade</option>
+                                <option value="WATERLOGGING">Monsoon Waterlogging</option>
+                                <option value="BREAKDOWN">Vehicle Breakdown / Stall</option>
+                                <option value="PROTEST">Civic Rally / Procession</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Severity Level</label>
+                            <select id="modal-inc-severity" class="form-control" required>
+                                <option value="LOW">Low (Minor Delay)</option>
+                                <option value="MEDIUM" selected>Medium (15-20 min delay)</option>
+                                <option value="HIGH">High (Major Bottleneck)</option>
+                                <option value="CRITICAL">Critical (Total Blockage)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Impact Delay (Minutes)</label>
+                        <input type="number" id="modal-inc-delay" class="form-control" min="5" max="180" value="20" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Incident Description & Location Details</label>
+                        <textarea id="modal-inc-desc" class="form-control" rows="3" required placeholder="Describe lane obstructions, landmarks, and advisory..."></textarea>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
+                        <button type="button" onclick="closeIncidentModal()" class="btn-secondary">Cancel</button>
+                        <button type="submit" class="btn-primary" id="btn-submit-incident">Submit Report</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container footer-bottom">
+            <div>&copy; 2026 TRAFFICIQ — Traffic Incident Management Engine</div>
+            <div>Integrated with <strong>Database Triggers</strong> for automated road speed adjustments</div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/store.js"></script>
+    <script>
+        let incidentsList = [];
+        let roadsList = [];
+
+        async function initIncidentsPage() {
+            await loadRoadsDropdown();
+            await loadIncidents();
+        }
+
+        async function loadRoadsDropdown() {
+            roadsList = await TrafficiQStore.getRoads();
+
+            const roadSel = document.getElementById("modal-inc-road");
+            roadSel.innerHTML = "";
+            roadsList.forEach(r => {
+                const id = r.road_id || r.roadId;
+                const name = r.road_name || r.roadName;
+                roadSel.innerHTML += `<option value="${id}">${name}</option>`;
+            });
+        }
+
+        async function loadIncidents() {
+            incidentsList = await TrafficiQStore.getIncidents();
+            renderIncidentsTable(incidentsList);
+        }
+
+        function renderIncidentsTable(list) {
+            document.getElementById("incident-count-display").innerText = `Showing ${list.length} incidents`;
+            const tbody = document.getElementById("incidents-tbody");
+            const isAdmin = Auth.isAdmin();
+
+            tbody.innerHTML = list.map(inc => {
+                const id = inc.incident_id || inc.incidentId;
+                const type = inc.incident_type || inc.incidentType;
+                const sev = inc.severity;
+                const road = inc.road_name || inc.roadName || 'Hyderabad Road';
+                const desc = inc.description;
+                const delay = inc.impact_delay_minutes || inc.impactDelayMinutes || 15;
+                const status = inc.status;
+                const reporter = inc.reported_by_name || inc.reportedByName || 'Public';
+
+                const sevClass = (sev === 'CRITICAL' || sev === 'HIGH') ? 'badge-severe' : 'badge-moderate';
+                const statusClass = status === 'RESOLVED' ? 'badge-low' : (status === 'IN_PROGRESS' ? 'badge-moderate' : 'badge-heavy');
+
+                const adminActions = isAdmin ? `
+                    ${status !== 'RESOLVED' ? `
+                        <button onclick="resolveIncident(${id})" class="btn-secondary" style="padding: 4px 8px; font-size: 0.78rem; color: var(--accent-green);" title="Mark Resolved">
+                            <i class="fas fa-check-circle"></i> Resolve
+                        </button>
+                    ` : ''}
+                    <button onclick="deleteIncident(${id})" class="btn-secondary" style="padding: 4px 8px; font-size: 0.78rem; color: var(--accent-red);" title="Delete Record">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                ` : `
+                    <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: 6px;">Admin Only</span>
+                `;
+
+                return `
+                    <tr>
+                        <td><code>#${id}</code></td>
+                        <td><span class="badge-status ${sevClass}">${sev}</span></td>
+                        <td><strong>${type}</strong></td>
+                        <td><i class="fas fa-road" style="color: var(--accent-cyan); margin-right: 4px;"></i> ${road}</td>
+                        <td style="max-width: 280px; font-size: 0.88rem;">${desc}</td>
+                        <td><strong style="color: var(--accent-orange);">+${delay}m</strong></td>
+                        <td><span class="badge-status ${statusClass}">${status}</span></td>
+                        <td style="font-size: 0.85rem; color: var(--text-muted);">${reporter}</td>
+                        <td style="text-align: right; white-space: nowrap;">
+                            ${adminActions}
+                        </td>
+                    </tr>
+                `;
+            }).join("");
+        }
+
+        function filterIncidents() {
+            const q = document.getElementById("incident-search").value.toLowerCase();
+            const statusFilter = document.getElementById("incident-status-filter").value;
+            const sevFilter = document.getElementById("incident-severity-filter").value;
+
+            const filtered = incidentsList.filter(inc => {
+                const desc = (inc.description || '').toLowerCase();
+                const road = (inc.road_name || inc.roadName || '').toLowerCase();
+                const status = inc.status;
+                const sev = inc.severity;
+
+                const matchQ = desc.includes(q) || road.includes(q);
+                const matchStatus = (statusFilter === "ALL" || status === statusFilter);
+                const matchSev = (sevFilter === "ALL" || sev === sevFilter);
+                return matchQ && matchStatus && matchSev;
+            });
+
+            renderIncidentsTable(filtered);
+        }
+
+        function openIncidentModal() {
+            document.getElementById("incident-form").reset();
+            document.getElementById("incident-modal").classList.add("active");
+        }
+
+        function closeIncidentModal() {
+            document.getElementById("incident-modal").classList.remove("active");
+        }
+
+        async function handleIncidentSubmit(e) {
+            e.preventDefault();
+            const payload = {
+                roadId: parseInt(document.getElementById("modal-inc-road").value),
+                incidentType: document.getElementById("modal-inc-type").value,
+                severity: document.getElementById("modal-inc-severity").value,
+                impactDelayMinutes: parseInt(document.getElementById("modal-inc-delay").value),
+                description: document.getElementById("modal-inc-desc").value
+            };
+
+            await TrafficiQStore.addIncident(payload);
+            alert("Traffic incident reported. Road congestion status updated.");
+            closeIncidentModal();
+            await loadIncidents();
+        }
+
+        async function resolveIncident(id) {
+            if (!confirm(`Mark incident #${id} as RESOLVED? This will trigger database restore procedures.`)) return;
+
+            await TrafficiQStore.resolveIncident(id);
+            alert("Incident marked as RESOLVED. Road speed restored.");
+            await loadIncidents();
+        }
+
+        async function deleteIncident(id) {
+            if (!confirm(`Are you sure you want to permanently delete incident record #${id}?`)) return;
+
+            await TrafficiQStore.deleteIncident(id);
+            alert("Incident record deleted.");
+            await loadIncidents();
+        }
+
+        document.addEventListener("DOMContentLoaded", initIncidentsPage);
+    </script>
+</body>
+</html>

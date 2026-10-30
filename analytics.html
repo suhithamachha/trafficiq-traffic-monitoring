@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRAFFICIQ — Traffic Analytics & Statistical Reports</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header class="navbar">
+        <div class="container nav-container">
+            <a href="index.html" class="logo-brand">
+                <div class="logo-icon"><i class="fas fa-route"></i></div>
+                <span class="logo-text">TRAFFICIQ</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html" class="nav-link"><i class="fas fa-home"></i> Home</a></li>
+                <li><a href="dashboard.html" class="nav-link"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="routes.html" class="nav-link"><i class="fas fa-directions"></i> Route Planner</a></li>
+                <li><a href="roads.html" class="nav-link"><i class="fas fa-road"></i> Road Database</a></li>
+                <li><a href="incidents.html" class="nav-link"><i class="fas fa-exclamation-triangle"></i> Incidents</a></li>
+                <li><a href="analytics.html" class="nav-link active"><i class="fas fa-chart-pie"></i> Analytics</a></li>
+            </ul>
+            <div class="nav-actions">
+                <button class="theme-toggle-btn" title="Toggle Theme"><i class="fas fa-sun"></i></button>
+                <div id="navbar-auth-section">
+                    <a href="login.html" class="btn-primary"><i class="fas fa-user-circle"></i> Sign In</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="container" style="padding-top: 30px; padding-bottom: 50px;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
+            <div>
+                <h1 style="font-size: 1.8rem; font-weight: 800; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-chart-line" style="color: var(--accent-cyan);"></i> Traffic Analytics & Reports
+                </h1>
+                <p style="color: var(--text-secondary); font-size: 0.95rem;">
+                    Empirical performance metrics, congestion distribution, peak-hour bottlenecks, and CSV report export.
+                </p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <span class="badge-demo"><span class="badge-live-pulse"></span> Simulated Historical Analytics</span>
+                <button onclick="exportCsvReport()" class="btn-primary" style="padding: 8px 18px;">
+                    <i class="fas fa-file-csv"></i> Export Report (CSV)
+                </button>
+            </div>
+        </div>
+
+        <!-- Metric KPI Cards -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-icon-box metric-icon-blue"><i class="fas fa-road"></i></div>
+                <div>
+                    <div class="metric-label">Network Length</div>
+                    <div class="metric-value">184.8 <span style="font-size: 1rem; font-weight: 500;">km</span></div>
+                    <div class="metric-hint">20 surveyed corridors</div>
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon-box metric-icon-green"><i class="fas fa-tachometer-alt"></i></div>
+                <div>
+                    <div class="metric-label">Rush Hour Avg Speed</div>
+                    <div class="metric-value">28.5 <span style="font-size: 1rem; font-weight: 500;">km/h</span></div>
+                    <div class="metric-hint">09:00 - 11:00 & 18:00 - 20:00</div>
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon-box metric-icon-amber"><i class="fas fa-stopwatch"></i></div>
+                <div>
+                    <div class="metric-label">Avg Corridor Delay</div>
+                    <div class="metric-value">+14.2 <span style="font-size: 1rem; font-weight: 500;">min</span></div>
+                    <div class="metric-hint">Above free-flow baseline</div>
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon-box metric-icon-red"><i class="fas fa-shield-alt"></i></div>
+                <div>
+                    <div class="metric-label">Incident Clearance</div>
+                    <div class="metric-value">84.2%</div>
+                    <div class="metric-hint">Monthly resolution rate</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart Grid Row 1 -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 30px;">
+            
+            <!-- Congestion Distribution Donut -->
+            <div class="table-card" style="padding: 20px;">
+                <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 4px;">
+                    <i class="fas fa-chart-pie" style="color: var(--accent-blue);"></i> Congestion Level Distribution
+                </h3>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
+                    Percentage breakdown of active Hyderabad road segments by congestion category
+                </p>
+                <div style="position: relative; height: 280px;">
+                    <canvas id="chart-congestion-donut"></canvas>
+                </div>
+            </div>
+
+            <!-- 24-Hour Speed Trend Line -->
+            <div class="table-card" style="padding: 20px;">
+                <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 4px;">
+                    <i class="fas fa-chart-line" style="color: var(--accent-cyan);"></i> Hourly Average Speed Trends
+                </h3>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
+                    Simulated 24-hour cycle showing traffic speed drops during morning and evening rush hours
+                </p>
+                <div style="position: relative; height: 280px;">
+                    <canvas id="chart-speed-trend"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Chart Grid Row 2 -->
+        <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; margin-bottom: 30px;">
+            
+            <!-- Top Congested Corridors Horizontal Bar -->
+            <div class="table-card" style="padding: 20px;">
+                <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 4px;">
+                    <i class="fas fa-fire" style="color: var(--accent-red);"></i> Most Congested Hyderabad Corridors
+                </h3>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
+                    Road segments with highest speed degradation relative to posted speed limits
+                </p>
+                <div style="position: relative; height: 300px;">
+                    <canvas id="chart-top-congested"></canvas>
+                </div>
+            </div>
+
+            <!-- Road Types Breakdown -->
+            <div class="table-card" style="padding: 20px;">
+                <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 4px;">
+                    <i class="fas fa-road" style="color: var(--accent-amber);"></i> Road Network Hierarchy
+                </h3>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
+                    Classification of road infrastructure across Hyderabad urban tiers
+                </p>
+                <div style="position: relative; height: 300px;">
+                    <canvas id="chart-road-types"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container footer-bottom">
+            <div>&copy; 2026 TRAFFICIQ — Traffic Analytics & Reporting Module</div>
+            <div>All charts powered by <strong>Chart.js</strong> with simulated empirical telemetries</div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/store.js"></script>
+    <script>
+        let donutChart, lineChart, barChart, typeChart;
+
+        async function initAnalytics() {
+            let analyticsData = null;
+
+            try {
+                const res = await fetch(`${CONFIG.API_BASE}/analytics/data`);
+                if (res.ok) {
+                    const json = await res.json();
+                    if (json.success && json.data) {
+                        analyticsData = json.data;
+                    }
+                }
+            } catch (e) {}
+
+            if (!analyticsData) {
+                const roads = await TrafficiQStore.getRoads();
+                const cong = { LOW: 0, MODERATE: 0, HEAVY: 0, SEVERE: 0 };
+                const types = { EXPRESSWAY: 0, ARTERIAL: 0, SUB_ARTERIAL: 0 };
+
+                roads.forEach(r => {
+                    const c = r.congestion_level || r.congestionLevel || 'LOW';
+                    cong[c] = (cong[c] || 0) + 1;
+                    const t = r.road_type || r.roadType || 'ARTERIAL';
+                    types[t] = (types[t] || 0) + 1;
+                });
+
+                analyticsData = {
+                    congestion_breakdown: cong,
+                    hourly_trend: {
+                        labels: ["06:00", "08:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00", "22:00"],
+                        speeds: [58, 30, 21, 38, 42, 32, 19, 25, 50]
+                    },
+                    top_congested_corridors: [
+                        { road_name: "Banjara Hills Rd 1 to Panjagutta", current_speed: 12.5, speed_limit: 40 },
+                        { road_name: "Dilsukhnagar - Charminar", current_speed: 11.0, speed_limit: 40 },
+                        { road_name: "Panjagutta - Ameerpet Corridor", current_speed: 14.0, speed_limit: 45 },
+                        { road_name: "Begumpet - Secunderabad", current_speed: 22.5, speed_limit: 50 },
+                        { road_name: "Road No. 36 Madhapur", current_speed: 21.0, speed_limit: 50 }
+                    ],
+                    road_type_breakdown: types
+                };
+            }
+
+            renderCharts(analyticsData);
+
+            window.addEventListener("trafficiq-theme-changed", () => {
+                renderCharts(analyticsData);
+            });
+        }
+
+        function isDarkTheme() {
+            return document.documentElement.getAttribute("data-theme") !== "light";
+        }
+
+        function renderCharts(data) {
+            const dark = isDarkTheme();
+            const textColor = dark ? "#94A3B8" : "#475569";
+            const gridColor = dark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.06)";
+
+            // 1. Donut Chart
+            if (donutChart) donutChart.destroy();
+            const ctxDonut = document.getElementById("chart-congestion-donut").getContext("2d");
+            const cong = data.congestion_breakdown || { LOW: 6, MODERATE: 7, HEAVY: 4, SEVERE: 3 };
+            donutChart = new Chart(ctxDonut, {
+                type: "doughnut",
+                data: {
+                    labels: ["Low Flow", "Moderate", "Heavy Delays", "Severe Gridlock"],
+                    datasets: [{
+                        data: [cong.LOW || 0, cong.MODERATE || 0, cong.HEAVY || 0, cong.SEVERE || 0],
+                        backgroundColor: ["#10B981", "#F59E0B", "#F97316", "#EF4444"],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: "bottom", labels: { color: textColor, font: { family: 'Inter' } } }
+                    }
+                }
+            });
+
+            // 2. Speed Trend Line Chart
+            if (lineChart) lineChart.destroy();
+            const ctxLine = document.getElementById("chart-speed-trend").getContext("2d");
+            const trend = data.hourly_trend || { labels: [], speeds: [] };
+            lineChart = new Chart(ctxLine, {
+                type: "line",
+                data: {
+                    labels: trend.labels,
+                    datasets: [{
+                        label: "Avg Speed (km/h)",
+                        data: trend.speeds,
+                        borderColor: "#00DFD8",
+                        backgroundColor: "rgba(0, 223, 216, 0.1)",
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 3,
+                        pointBackgroundColor: "#00DFD8"
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { ticks: { color: textColor }, grid: { color: gridColor } },
+                        y: { ticks: { color: textColor }, grid: { color: gridColor }, title: { display: true, text: 'km/h', color: textColor } }
+                    },
+                    plugins: {
+                        legend: { labels: { color: textColor } }
+                    }
+                }
+            });
+
+            // 3. Top Congested Horizontal Bar
+            if (barChart) barChart.destroy();
+            const ctxBar = document.getElementById("chart-top-congested").getContext("2d");
+            const topList = data.top_congested_corridors || [];
+            barChart = new Chart(ctxBar, {
+                type: "bar",
+                data: {
+                    labels: topList.map(r => r.road_name.length > 25 ? r.road_name.substring(0, 22) + "..." : r.road_name),
+                    datasets: [
+                        {
+                            label: "Current Flow (km/h)",
+                            data: topList.map(r => r.current_speed),
+                            backgroundColor: "#EF4444"
+                        },
+                        {
+                            label: "Speed Limit (km/h)",
+                            data: topList.map(r => r.speed_limit),
+                            backgroundColor: "rgba(255, 255, 255, 0.15)"
+                        }
+                    ]
+                },
+                options: {
+                    indexAxis: "y",
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { ticks: { color: textColor }, grid: { color: gridColor } },
+                        y: { ticks: { color: textColor }, grid: { display: false } }
+                    },
+                    plugins: {
+                        legend: { position: "top", labels: { color: textColor } }
+                    }
+                }
+            });
+
+            // 4. Road Types Bar Chart
+            if (typeChart) typeChart.destroy();
+            const ctxType = document.getElementById("chart-road-types").getContext("2d");
+            const types = data.road_type_breakdown || { EXPRESSWAY: 3, ARTERIAL: 13, SUB_ARTERIAL: 4 };
+            typeChart = new Chart(ctxType, {
+                type: "bar",
+                data: {
+                    labels: ["Expressway", "Arterial", "Sub-Arterial"],
+                    datasets: [{
+                        label: "Segments Count",
+                        data: [types.EXPRESSWAY || 0, types.ARTERIAL || 0, types.SUB_ARTERIAL || 0],
+                        backgroundColor: ["#0070F3", "#00DFD8", "#F59E0B"]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { ticks: { color: textColor }, grid: { color: gridColor } },
+                        y: { ticks: { color: textColor }, grid: { color: gridColor } }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        async function exportCsvReport() {
+            try {
+                const res = await fetch(`${CONFIG.API_BASE}/analytics/export-csv`);
+                if (res.ok) {
+                    const csvText = await res.text();
+                    downloadCsv(csvText, "trafficiq_report.csv");
+                    return;
+                }
+            } catch (e) {}
+
+            const roads = await TrafficiQStore.getRoads();
+            let csv = "Road ID,Road Code,Road Name,Road Type,Distance (km),Speed Limit (km/h),Congestion Level,Current Speed (km/h),Est Travel Time (min),Active Incidents\n";
+            roads.forEach(r => {
+                const id = r.road_id || r.roadId;
+                const code = r.road_code || r.roadCode;
+                const name = r.road_name || r.roadName;
+                const type = r.road_type || r.roadType;
+                const dist = r.distance_km || r.distanceKm;
+                const limit = r.speed_limit_kmh || r.speedLimitKmh;
+                const cong = r.congestion_level || r.congestionLevel || 'LOW';
+                const speed = r.current_speed_kmh || r.currentSpeedKmh || limit;
+                const time = r.estimated_travel_time_min || r.estimatedTravelTimeMin || 5.0;
+                const inc = r.active_incidents || r.activeIncidents || 0;
+                csv += `${id},"${code}","${name}",${type},${dist},${limit},${cong},${speed},${time},${inc}\n`;
+            });
+            downloadCsv(csv, "trafficiq_report.csv");
+        }
+
+        function downloadCsv(content, filename) {
+            const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute("download", filename);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        document.addEventListener("DOMContentLoaded", initAnalytics);
+    </script>
+</body>
+</html>
